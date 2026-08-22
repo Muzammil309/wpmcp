@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-smoke:
+    name: Lint + Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: PHP lint (every file)
+        run: find includes admin -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Smoke test
+        run: php tests/smoke.php
+
+  e2e:
+    name: E2E (wp-env)
+    runs-on: ubuntu-latest
+    continue-on-error: true # wp-env on CI is best-effort until stabilised; lint+smoke are the gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Start wp-env
+        run: npx -y @wordpress/env start
+
+      - name: Configure WordPress
+        run: |
+          npx @wordpress/env run cli wp plugin install elementor woocommerce --activate
+          npx @wordpress/env run cli wp option update woocommerce_onboarding_opt_in no
+          npx @wordpress/env run cli wp rewrite structure '/%postname%/'
+          PASS=$(npx @wordpress/env run cli wp user application-password create admin ci --porcelain | tail -n1 | tr -d '[:space:]')
+          echo "WPMCP_PASS=$PASS" >> "$GITHUB_ENV"
+
+      - name: Run E2E suites
+        env:
+          WPMCP_BASE: http://localhost:8888
+          WPMCP_USER: admin
+        run: |
+          for suite in e2e e2e-blocks e2e-elementor e2e-system; do
+            echo "::group::$suite"
+            node "tests/$suite.mjs"
+            echo "::endgroup::"
+          done

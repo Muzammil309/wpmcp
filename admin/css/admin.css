@@ -1,0 +1,7 @@
+.wpmcp-wrap .wpmcp-card { max-width: 880px; margin-bottom: 16px; padding: 16px 20px; }
+.wpmcp-wrap pre { background: #f6f7f7; padding: 12px; border-radius: 4px; overflow-x: auto; }
+.wpmcp-wrap code { font-size: 12px; }
+.wpmcp-tools td { vertical-align: top; }
+.wpmcp-tool-toggle { width: 260px; white-space: nowrap; }
+.wpmcp-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: #c6e1c6; font-size: 11px; font-weight: 600; }
+.wpmcp-badge-warn { background: #ffd6a5; }
