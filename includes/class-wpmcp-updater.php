@@ -15,7 +15,7 @@ class WPMCP_Updater {
 	}
 
 	private static function repo(): string {
-		return (string) apply_filters( 'wpmcp_github_repo', get_option( 'wpmcp_github_repo', 'yourname/wpmcp' ) );
+		return (string) apply_filters( 'wpmcp_github_repo', get_option( 'wpmcp_github_repo', 'Muzammil309/wpmcp' ) );
 	}
 
 	public static function latest_release() {
