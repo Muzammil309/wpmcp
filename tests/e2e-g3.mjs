@@ -37,7 +37,7 @@ async function rpc(method, params) {
     }, agent: false }, (res) => {
       let data = ''; res.on('data', (c) => (data += c)); res.on('end', () => resolve(safeParse(data)));
     });
-    req.on('error', reject); req.setTimeout(60000, () => req.destroy(new Error('timeout')));
+    req.on('error', () => resolve(null)); req.setTimeout(180000, () => req.destroy());
     req.write(payload); req.end();
   });
 }

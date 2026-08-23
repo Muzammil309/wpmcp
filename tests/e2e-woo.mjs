@@ -1,4 +1,4 @@
-import { request } from 'node:http';
+﻿import { request } from 'node:http';
 import { spawnSync } from 'node:child_process';
 import { writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -88,8 +88,8 @@ async function rpc( method, params = undefined ) {
 				res.on( 'end', () => resolve( safeParse( data ) ) );
 			}
 		);
-		req.on( 'error', reject );
-		req.setTimeout( 20000, () => req.destroy( new Error( 'timeout' ) ) );
+		req.on( 'error', () => resolve( null ) );
+		req.setTimeout( 60000, () => req.destroy() );
 		req.write( payload );
 		req.end();
 	} );

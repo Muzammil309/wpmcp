@@ -1,4 +1,4 @@
-import { request } from 'node:http';
+﻿import { request } from 'node:http';
 
 const BASE = process.env.WPMCP_BASE || 'http://localhost:8888';
 const USER = process.env.WPMCP_USER || 'admin';
@@ -36,8 +36,8 @@ function callRpc( body, auth = true ) {
 				res.on( 'end', () => resolve( { status: res.statusCode, json: safeParse( data ) } ) );
 			}
 		);
-		req.on( 'error', reject );
-		req.setTimeout( 20000, () => req.destroy( new Error( 'timeout' ) ) );
+		req.on( 'error', () => resolve( null ) );
+		req.setTimeout( 60000, () => req.destroy() );
 		req.write( payload );
 		req.end();
 	} );

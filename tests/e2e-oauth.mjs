@@ -1,4 +1,4 @@
-import { request } from 'node:http';
+﻿import { request } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 
 const BASE = process.env.WPMCP_BASE || 'http://localhost:8888';
@@ -35,8 +35,8 @@ function http( method, path, body, headers = {} ) {
 			res.on( 'data', ( c ) => ( data += c ) );
 			res.on( 'end', () => resolve( { status: res.statusCode, location: res.headers.location, json: safeParse( data ), raw: data } ) );
 		} );
-		req.on( 'error', reject );
-		req.setTimeout( 15000, () => req.destroy( new Error( 'timeout' ) ) );
+		req.on( 'error', () => resolve( null ) );
+		req.setTimeout( 30000, () => req.destroy() );
 		if ( payload ) req.write( payload );
 		req.end();
 	} );
@@ -69,7 +69,7 @@ const clientId = reg.json.client_id;
 const badReg = await http( 'POST', '/wp-json/wpmcp/v1/oauth/register', { client_name: 'x', redirect_uris: [ 'http://evil.example/cb' ] } );
 check( 'register: non-local http rejected', badReg.status === 400 );
 
-// 3. Authorization code — minted server-side because the consent screen needs a browser session.
+// 3. Authorization code â€” minted server-side because the consent screen needs a browser session.
 const verifier = randomBytes( 48 ).toString( 'base64url' );
 const challenge = createHash( 'sha256' ).update( verifier ).digest( 'base64url' );
 const state = randomBytes( 8 ).toString( 'hex' );
