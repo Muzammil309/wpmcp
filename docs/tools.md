@@ -1,6 +1,6 @@
 # WP MCP Suite — Tool Reference
 
-Generated from a live `tools/list` call. 85 tools total (6 WooCommerce tools appear only with an active Pro license; Elementor tools only when Elementor is active).
+Generated from a live `tools/list` call. Up to 110 tools depending on what is installed and licensed: WooCommerce tools appear only with an active Pro license and WooCommerce; Elementor tools only when Elementor is active; Forms tools only with CF7/WPForms/Gravity Forms; MetaBox tools only with MetaBox; tools marked **pro** need a license.
 
 Legend: **write** = mutates the site · **confirm** = requires `confirm: true` · **pro** = requires an active license.
 
@@ -754,6 +754,31 @@ Replace site-wide Elementor typography presets (primary/secondary/tertiary text 
 | `typography` | array **required** |
 
 
+### `update-page-settings` **write**
+
+Merge settings into a page's Elementor document settings (layout template, custom_css, background etc). Only passed keys change.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_id` | integer **required** |
+| `settings` | object **required** |
+| `template` | string; one of: `canvas`, `full-width`, `default` |
+
+
+### `global-classes` **write** **confirm** **pro**
+
+Manage the Elementor Class Manager design system. Operations: list, create, update, delete (confirm), reorder. Requires Elementor with the atomic-elements experiment active.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `list`, `create`, `update`, `delete`, `reorder` **required** |
+| `label` | string; create: class label |
+| `class_id` | string; update/delete/reorder target g-id |
+| `styles` | object; create/update: props object e.g. {"color":"#f00"} |
+| `order` | array; reorder: full ordered id list |
+| `confirm` | boolean; delete only |
+
+
 ### `get-element-settings`
 
 Full raw settings of one element by id (container or widget), including every stored key.
@@ -1038,4 +1063,260 @@ Parameterized row writes. Operations: insert-row, update-rows (equality WHERE re
 | `data` | object; Column => value |
 | `where` | object; Equality WHERE: column => value (non-empty) |
 | `confirm` | boolean; delete-rows only |
+
+
+## Accessibility
+
+WCAG-oriented page audits with dry-run-first fixes for contrast and alt text.
+
+
+### `audit-page-a11y`
+
+WCAG-oriented accessibility audit of the rendered page: images without alt, heading order, generic link text, unlabeled form fields, lang attribute, and (for Elementor pages) text/background color-pair contrast. Returns a scored report.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_id` | integer **required** |
+
+
+### `fix-color-contrast` **write** **pro**
+
+Propose adjusted text colors so failing pairs meet WCAG AA (4.5:1). Dry-run by default; apply:true rewrites the Elementor element colors. Every change lands in the change ledger.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_id` | integer **required** |
+| `apply` | boolean; default: `false` |
+| `target_ratio` | number; default: `4.5`; WCAG AA normal text = 4.5, large text = 3.0 |
+
+
+### `add-alt-text-from-context` **write** **pro**
+
+Propose alt text for images missing it, derived from filename, post title and nearest heading. Dry-run by default; apply:true writes alt text to the Media Library items.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_id` | integer **required** |
+| `apply` | boolean; default: `false` |
+| `limit` | integer; default: `20` |
+
+
+## Themes
+
+Active theme context and theme_mod management, child-theme generation (Pro).
+
+
+### `theme-read`
+
+Read the active theme: context (name, version, parent/child, block-theme, menu locations) and theme_mod values. Operations: get-theme-context, get-mods.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `get-theme-context`, `get-mods`; default: `"get-theme-context"` |
+| `keys` | array; get-mods: only return these mod keys |
+
+
+### `theme-write` **write** **confirm** **pro**
+
+Write the active theme's settings: set-mods merges theme_mod values; create-child-theme generates and optionally activates a child theme (confirm:true). Pro only. Write ships disabled.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `set-mods`, `create-child-theme` **required** |
+| `mods` | object; set-mods: key => value |
+| `name` | string; create-child-theme: child theme name |
+| `activate` | boolean; default: `false`; create-child-theme: activate after creation |
+| `confirm` | boolean; create-child-theme only |
+
+## Forms
+
+Contact-form reads across CF7 / WPForms / Gravity Forms; entry management is Pro. Registers only when at least one supported form plugin is active.
+
+
+### `forms-read`
+
+Read contact-form data across installed form plugins (Contact Form 7, WPForms, Gravity Forms). Operations: providers, list-forms, get-form. Entries are not included in wave one.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `providers`, `list-forms`, `get-form`; default: `"list-forms"` |
+| `provider` | string; one of: `cf7`, `wpforms`, `gravityforms`; Omit with operation=providers to list available providers |
+| `form_id` | integer; get-form only |
+
+
+### `forms-write` **write** **pro**
+
+Manage form entries (WPForms, Gravity Forms). Operations: set-entry-status, delete-entry (confirm:true). Pro only.
+
+| Argument | Type / constraints |
+|---|---|
+| `provider` | string; one of: `wpforms`, `gravityforms` **required** |
+| `operation` | string; one of: `set-entry-status`, `delete-entry` **required** |
+| `entry_id` | integer **required** |
+| `status` | string; set-entry-status: provider-specific status word |
+| `confirm` | boolean; delete-entry only |
+
+## MetaBox
+
+MetaBox custom-field reads and writes. Registers only when MetaBox is active.
+
+
+### `metabox-read`
+
+Read MetaBox data: list-field-groups, get-field-group, get-fields (values for one post).
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `list-field-groups`, `get-field-group`, `get-fields`; default: `"list-field-groups"` |
+| `group_id` | integer; get-field-group: group post ID |
+| `post_id` | integer; get-fields: post ID |
+
+
+### `metabox-write` **write** **pro**
+
+Write MetaBox custom-field values for a post. Unknown field names are skipped; no deletes; ids immutable. Pro only.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_id` | integer **required** |
+| `fields` | object **required** |
+
+## Memory
+
+Durable project memory: approved site guidance plus recent session summaries, so an agent does not re-guess context across sessions.
+
+
+### `memory-read`
+
+Read approved site guidance (guardrails, facts, conventions) and recent session summaries so the agent does not re-guess context. Operations: approved, sessions, pending (admins only).
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `approved`, `sessions`, `pending`; default: `"approved"` |
+| `type` | string; Filter approved items by type: guardrail, fact, convention, instruction |
+
+
+### `memory-write` **write** **pro** 
+
+Propose durable guidance (stored pending until an admin approves), approve pending proposals, forget entries, or save a session summary. Admin-only.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `propose`, `approve`, `forget`, `save-session` **required** |
+| `type` | string; one of: `guardrail`, `fact`, `convention`, `instruction`; propose only |
+| `text` | string; propose: guidance text; save-session: summary text |
+| `id` | string; approve/forget target id |
+
+## Brand Kits
+
+Bundled color + typography kits applied to the Elementor site kit. Requires Elementor.
+
+
+### `brand-kits-list`
+
+Bundled color + typography kits. Each apply snapshots the current Elementor kit first (rollback via the change ledger).
+
+
+
+### `brand-kit-apply` **write** **pro**
+
+Apply a bundled brand kit to the Elementor site kit (system colors + heading/body typography). Snapshots the previous values into the change ledger before writing.
+
+| Argument | Type / constraints |
+|---|---|
+| `kit` | string; Kit slug from brand-kits-list **required** |
+
+## Export & Restore
+
+Git-friendly JSON mirrors of content under `uploads/wpmcp-exports/`, one file per post.
+
+
+### `export-content` **write**
+
+Export posts/pages to git-friendly JSON files (content, excerpt, slug, meta, terms) under uploads/wpmcp-exports/. One file per post.
+
+| Argument | Type / constraints |
+|---|---|
+| `post_type` | string; default: `"page"` |
+| `search` | string |
+| `limit` | integer; default: `20`; maximum: `200` |
+
+
+### `list-exports`
+
+List exported JSON mirror files with sizes and dates.
+
+
+
+### `restore-content` **write** **confirm**
+
+Restore a post from its export file (creates or updates by slug). Overwrites the content of an existing post with the same slug. Destructive; requires confirm:true.
+
+| Argument | Type / constraints |
+|---|---|
+| `file` | string; File name from list-exports **required** |
+| `confirm` | boolean **required** |
+
+## Comments
+
+Comment reads for editors and moderation writes (moderate_comments required).
+
+
+### `comment-read`
+
+List and read comments. Operations: list-comments (filter by status/post/search), get-comment. Author email is included only for users who can moderate.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `list-comments`, `get-comment`; default: `"list-comments"` |
+| `status` | string; one of: `all`, `hold`, `approve`, `spam`, `trash`; default: `"all"` |
+| `post_id` | integer |
+| `search` | string |
+| `id` | integer; get-comment only |
+| `per_page` | integer; default: `20`; maximum: `100` |
+| `page` | integer; default: `1` |
+
+
+### `comment-write` **write**
+
+Moderate and create comments. Operations: create-comment (held for review by default), reply, set-status (approve/hold/spam/trash), delete (confirm:true; permanent). Status changes are recorded to the change ledger with the prior status and can be rolled back.
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `create-comment`, `reply`, `set-status`, `delete` **required** |
+| `post_id` | integer; create-comment only |
+| `parent_id` | integer; reply only: parent comment id |
+| `id` | integer; set-status/delete target comment id |
+| `content` | string; create-comment/reply body |
+| `author_name` | string; create-comment only |
+| `author_email` | string; create-comment only |
+| `author_url` | string; create-comment only |
+| `approve_now` | boolean; default: `false`; create-comment/reply: approve immediately instead of holding |
+| `status` | string; one of: `approve`, `hold`, `spam`, `trash`; set-status only |
+| `confirm` | boolean; delete only |
+
+## Revisions
+
+Post revision inspection and confirm-gated restore with ledger rollback.
+
+
+### `revision-read`
+
+List and inspect post revisions. Operations: list-revisions, get-revision (full revision fields side by side with the current values).
+
+| Argument | Type / constraints |
+|---|---|
+| `operation` | string; one of: `list-revisions`, `get-revision`; default: `"list-revisions"` |
+| `post_id` | integer; list-revisions only |
+| `revision_id` | integer; get-revision only |
+
+
+### `restore-revision` **write** **confirm**
+
+Restore a post to a saved revision. The current title/content/excerpt/status are captured in the change ledger first and can be rolled back via rollback-change. Destructive; requires confirm:true.
+
+| Argument | Type / constraints |
+|---|---|
+| `revision_id` | integer **required** |
+| `confirm` | boolean **required** |
 

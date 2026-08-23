@@ -211,6 +211,52 @@ class WPMCP_Tool_Elementor_Extra {
 			)
 		);
 		$this->registry->register(
+			'update-page-settings',
+			array(
+				'title'       => 'Update Page Settings',
+				'description' => "Merge settings into a page's Elementor document settings (layout template, custom_css, background etc). Only passed keys change.",
+				'category'    => 'elementor',
+				'write'       => True,
+				'capability'  => 'edit_posts',
+				'inputSchema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id'  => array( 'type' => 'integer', 'required' => True ),
+						'settings' => array( 'type' => 'object', 'required' => True ),
+						'template' => array( 'type' => 'string', 'enum' => array( 'canvas', 'full-width', 'default' ) ),
+					),
+					'required'   => array( 'post_id', 'settings' ),
+				),
+				'handler'     => array( $this, 'update_page_settings' ),
+			)
+		);
+
+		$this->registry->register(
+			'global-classes',
+			array(
+				'title'       => 'Global Classes (Elementor 4)',
+				'description' => 'Manage the Elementor Class Manager design system. Operations: list, create, update, delete (confirm), reorder. Requires Elementor with the atomic-elements experiment active.',
+				'category'    => 'elementor',
+				'write'       => True,
+				'pro'         => True,
+				'capability'  => 'edit_posts',
+				'inputSchema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'operation' => array( 'type' => 'string', 'enum' => array( 'list', 'create', 'update', 'delete', 'reorder' ), 'required' => True ),
+						'label'     => array( 'type' => 'string', 'description' => 'create: class label' ),
+						'class_id'  => array( 'type' => 'string', 'description' => 'update/delete/reorder target g-id' ),
+						'styles'    => array( 'type' => 'object', 'description' => 'create/update: props object e.g. {"color":"#f00"}' ),
+						'order'     => array( 'type' => 'array', 'items' => array( 'type' => 'string' ), 'description' => 'reorder: full ordered id list' ),
+						'confirm'   => array( 'type' => 'boolean', 'description' => 'delete only' ),
+					),
+					'required'   => array( 'operation' ),
+				),
+				'handler'     => array( $this, 'global_classes' ),
+			)
+		);
+
+		$this->registry->register(
 			'get-element-settings',
 			array(
 				'title'       => 'Get Element Settings',
@@ -388,9 +434,18 @@ class WPMCP_Tool_Elementor_Extra {
 			'title'         => $post->post_title,
 			'version'       => get_post_meta( $post_id, '_elementor_version', true ),
 			'template_type' => get_post_meta( $post_id, '_elementor_template_type', true ),
-			'page_settings' => json_decode( (string) get_post_meta( $post_id, '_elementor_page_settings', true ), true ),
+			'page_settings' => $this->page_settings_raw( $post_id ),
 			'elements'      => is_array( $data ) ? $data : array(),
 		);
+	}
+
+	private function page_settings_raw( int $post_id ): array {
+		$ps = get_post_meta( $post_id, '_elementor_page_settings', true );
+		if ( is_array( $ps ) ) {
+			return $ps;
+		}
+		$decoded = json_decode( (string) $ps, true );
+		return is_array( $decoded ) ? $decoded : array();
 	}
 
 	public function import_template( array $args ): array {
@@ -672,5 +727,120 @@ class WPMCP_Tool_Elementor_Extra {
 			);
 		}
 		return array( 'total' => (int) $query->found_posts, 'pages' => $out );
+	}
+	public function update_page_settings( array $args ): array {
+		$post_id = (int) ( $args['post_id'] ?? 0 );
+		if ( ! get_post( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
+			return array( 'error' => 'post_not_found_or_forbidden' );
+		}
+		$settings = isset( $args['settings'] ) && is_array( $args['settings'] ) ? $args['settings'] : array();
+		if ( isset( $args['template'] ) && in_array( $args['template'], array( 'canvas', 'full-width', 'default' ), true ) && 'default' !== $args['template'] ) {
+			$settings['template'] = 'canvas' === $args['template'] ? 'elementor_canvas' : 'elementor_header_footer';
+		}
+		if ( empty( $settings ) ) {
+			return array( 'error' => 'settings_required' );
+		}
+		$before = json_decode( (string) get_post_meta( $post_id, '_elementor_page_settings', true ), true );
+		$merged = array_merge( (array) ( is_array( $before ) ? $before : array() ), $settings );
+
+		update_metadata( 'post', $post_id, '_elementor_page_settings', wp_slash( $merged ) );
+		if ( ! empty( $settings['template'] ) ) {
+			update_metadata( 'post', $post_id, '_wp_page_template', $settings['template'] );
+		}
+		if ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
+			\Elementor\Plugin::$instance->files_manager->clear_cache();
+		}
+		wpmcp_plugin()->change_log->record( 'elementor', 'update-page-settings', $post_id, get_the_title( $post_id ), sprintf( 'Updated %d page setting(s)', count( $settings ) ), is_array( $before ) ? $before : array(), true );
+		return array( 'ok' => true, 'updated' => array_keys( $settings ) );
+	}
+
+	public function global_classes( array $args ): array {
+		if ( ! class_exists( '\Elementor\Modules\GlobalClasses\Global_Classes_Repository' ) || ! \Elementor\Plugin::$instance->experiments->is_feature_active( 'e_classes' ) ) {
+			return array( 'error' => 'global_classes_unavailable', 'message' => 'Requires Elementor 4.0+ with the e_classes (Global Classes) experiment active.' );
+		}
+		$repo = \Elementor\Modules\GlobalClasses\Global_Classes_Repository::make();
+		$operation = (string) ( $args['operation'] ?? 'list' );
+
+		if ( 'list' === $operation ) {
+			$all = $repo->all();
+			return array(
+				'order'  => $repo->get_order(),
+				'labels' => $repo->all_labels(),
+				'items'  => $all->get_items(),
+			);
+		}
+
+		$order = $repo->get_order();
+		$touched = array();
+
+		if ( 'create' === $operation ) {
+			$label = sanitize_text_field( (string) ( $args['label'] ?? '' ) );
+			if ( '' === $label ) {
+				return array( 'error' => 'label_required' );
+			}
+			$new_id = 'g-' . substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
+			$item = array(
+				'id'       => $new_id,
+				'label'    => $label,
+				'variants' => array(
+					'default' => array( 'props' => (object) ( $args['styles'] ?? array() ) ),
+				),
+			);
+			$touched[ $new_id ] = $item;
+			$order[]            = $new_id;
+			$repo->apply_changes( $touched, array( 'added' => array( $new_id ) ), $order );
+
+			// Some Elementor contexts skip batch post creation; ensure the post exists.
+			if ( null === $repo->get( $new_id ) && class_exists( '\Elementor\Modules\GlobalClasses\Global_Class_Post' ) ) {
+				$data = \Elementor\Modules\GlobalClasses\Utils\Global_Class_Data_Normalizer::normalize_style_fields( $item );
+				\Elementor\Modules\GlobalClasses\Global_Class_Post::create( $new_id, $label, $data, null );
+			}
+			wpmcp_plugin()->change_log->record( 'elementor', 'create-global-class', 0, $label, sprintf( 'Created global class %s (%s)', $new_id, $label ) );
+			return array( 'ok' => true, 'class_id' => $new_id, 'item' => $item );
+		}
+
+		$class_id = sanitize_text_field( (string) ( $args['class_id'] ?? '' ) );
+
+		if ( 'update' === $operation ) {
+			$current = $repo->get( $class_id );
+			if ( null === $current ) {
+				return array( 'error' => 'class_not_found' );
+			}
+			if ( isset( $args['label'] ) ) {
+				$current['label'] = sanitize_text_field( (string) $args['label'] );
+			}
+			if ( isset( $args['styles'] ) && is_array( $args['styles'] ) ) {
+				$current['variants']['default']['props'] = $args['styles'];
+			}
+			$touched[ $class_id ] = $current;
+			$repo->apply_changes( $touched, array( 'modified' => array( $class_id ) ), $order );
+			wpmcp_plugin()->change_log->record( 'elementor', 'update-global-class', 0, $class_id, sprintf( 'Updated global class %s', $class_id ), $current, true );
+			return array( 'ok' => true, 'class_id' => $class_id );
+		}
+
+		if ( 'delete' === $operation ) {
+			if ( empty( $args['confirm'] ) ) {
+				return array( 'error' => 'confirm_required' );
+			}
+			if ( null === $repo->get( $class_id ) ) {
+				return array( 'error' => 'class_not_found' );
+			}
+			$order = array_values( array_diff( $order, array( $class_id ) ) );
+			$repo->apply_changes( array(), array( 'deleted' => array( $class_id ) ), $order );
+			wpmcp_plugin()->change_log->record( 'elementor', 'delete-global-class', 0, $class_id, sprintf( 'Deleted global class %s', $class_id ) );
+			return array( 'deleted' => true, 'class_id' => $class_id );
+		}
+
+		if ( 'reorder' === $operation ) {
+			$new_order = array_map( 'strval', (array) ( $args['order'] ?? array() ) );
+			if ( empty( $new_order ) ) {
+				return array( 'error' => 'order_required' );
+			}
+			$repo->apply_changes( array(), array( 'order' => true ), $new_order );
+			wpmcp_plugin()->change_log->record( 'elementor', 'reorder-global-classes', 0, 'Class manager', sprintf( 'Reordered %d classes', count( $new_order ) ) );
+			return array( 'ok' => true, 'order' => $new_order );
+		}
+
+		return array( 'error' => 'unknown_operation' );
 	}
 }

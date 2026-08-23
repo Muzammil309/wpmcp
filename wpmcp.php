@@ -3,7 +3,7 @@
  * Plugin Name:       WP MCP Suite
  * Plugin URI:        https://github.com/yourname/wpmcp
  * Description:       WordPress MCP server for AI agents. SEO-first: unified SEO read/write across Yoast, Rank Math and Slim SEO, on-page SEO audits, meta tag and JSON-LD schema generation, plus content, media, settings and Elementor tools over MCP. Pro adds WooCommerce store management.
- * Version:           0.6.4
+ * Version:           0.7.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Your Name
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPMCP_VERSION', '0.6.4' );
+define( 'WPMCP_VERSION', '0.7.0' );
 define( 'WPMCP_FILE', __FILE__ );
 define( 'WPMCP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPMCP_URL', plugin_dir_url( __FILE__ ) );
@@ -69,6 +69,15 @@ require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-fs.php';
 require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-db.php';
 require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-cli.php';
 require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-acf.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-a11y.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-forms.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-metabox.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-themes.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-memory.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-brandkits.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-export.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-comments.php';
+require_once WPMCP_DIR . 'includes/tools/class-wpmcp-tool-revisions.php';
 
 require_once WPMCP_DIR . 'admin/class-wpmcp-admin.php';
 
@@ -124,6 +133,15 @@ final class WPMCP_Plugin {
 			new WPMCP_Tool_DB( $this->registry, $this->change_log ),
 			new WPMCP_Tool_CLI( $this->registry, $this->change_log ),
 			new WPMCP_Tool_ACF( $this->registry, $this->change_log ),
+			new WPMCP_Tool_A11y( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Forms( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Metabox( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Themes( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Memory( $this->registry, $this->change_log ),
+			new WPMCP_Tool_BrandKits( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Export( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Comments( $this->registry, $this->change_log ),
+			new WPMCP_Tool_Revisions( $this->registry, $this->change_log ),
 		);
 		foreach ( $tools as $tool ) {
 			$tool->register();

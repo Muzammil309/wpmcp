@@ -1,10 +1,10 @@
-=== WP MCP Suite ===
+﻿=== WP MCP Suite ===
 Contributors: yourname
 Tags: mcp, ai, seo, model context protocol, claude
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.6.4
+Stable tag: 0.7.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,9 +51,22 @@ WP MCP Suite exposes your WordPress site as a Model Context Protocol (MCP) serve
 
 == Changelog ==
 
+= 0.7.0 =
+* New: Accessibility toolkit - audit-page-a11y (scored WCAG report: alt text, heading order, generic links, form labels, lang attr, Elementor color-pair contrast), fix-color-contrast (dry-run by default, apply writes through the ledger), add-alt-text-from-context (proposes alt from filename/title/headings).
+* New: Forms wave 1 - forms-read (CF7 / WPForms / Gravity Forms providers, auto-detects installs) and Pro forms-write (entry status + delete for WPForms/GF).
+* New: MetaBox integration - metabox-read free, metabox-write Pro.
+* New: Theme management - theme-read (context + mods) and Pro theme-write (set-mods, child-theme generator with confirm gate).
+* New: Project memory - memory-read recalls approved guardrails/facts/conventions and session summaries; Pro memory-write proposes guidance pending admin approval, approves, forgets.
+* New: Brand kits - brand-kits-list plus Pro brand-kit-apply applies a bundled color/typography kit to the Elementor site kit (previous values snapshotted to the change ledger).
+* New: Content export - export-content/list-exports write git-friendly JSON mirrors under uploads/wpmcp-exports/; restore-content recreates or updates a post by slug (confirm-gated, before-image in the ledger).
+* New Elementor: update-page-settings, Elementor 4 Global Classes CRUD (global-classes, requires the e_classes experiment), plus get-element-settings, set-element-label, list-pages, container schema support.
+* New: Comments - comment-read (status/post/search filters, email visible to moderators only) and comment-write (create held-by-default comments and replies, approve/hold/spam/trash with ledger rollback, confirm-gated permanent delete).
+* New: Revisions - revision-read (list + side-by-side compare) and restore-revision (confirm-gated; prior content captured to the change ledger).
+* Fix: db-read no longer appends a second LIMIT clause.
+
 = 0.6.4 =
 * New: list-post-types and list-taxonomies reads.
-* New: Openverse stock images - search-images (free CC search, no API key) and one-call dd-stock-image with license credit stored as caption.
+* New: Openverse stock images - search-images (free CC search, no API key) and one-call add-stock-image with license credit stored as caption.
 * New: esize-media - scale/crop images in place with automatic .wpmcp-bak backups and full rollback via the change ledger.
 * New Elementor tools: get-element-settings, set-element-label (Navigator labels), list-pages, plus container support in get-widget-schema. Document engine gained a dirty-flag API used by label writes.
 

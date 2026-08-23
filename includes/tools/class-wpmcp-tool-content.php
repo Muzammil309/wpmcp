@@ -247,7 +247,8 @@ class WPMCP_Tool_Content {
 			'featured_image' => null,
 			'terms'          => array(),
 		);
-		if ( ! empty( $args['raw_content'] ) ) {
+		$include_raw = array_key_exists( 'raw_content', $args ) ? (bool) $args['raw_content'] : true;
+		if ( $include_raw ) {
 			$data['content'] = $post->post_content;
 		}
 		$thumb_id = (int) get_post_thumbnail_id( $post );

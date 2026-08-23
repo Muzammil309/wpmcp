@@ -19,7 +19,7 @@ class WPMCP_Tool_History {
 			'list-changes',
 			array(
 				'title'       => 'List Changes',
-				'description' => 'Recent MCP-made changes, newest first. Filter by domain (content, media, settings, seo, redirects) or rolled_back state.',
+				'description' => 'Recent MCP-made changes, newest first. Filter by domain (content, media, settings, seo, redirects, comments) or rolled_back state.',
 				'category'    => 'history',
 				'capability'  => 'manage_options',
 				'inputSchema' => array(
@@ -139,6 +139,14 @@ class WPMCP_Tool_History {
 				break;
 			case 'update-order':
 				$result = $this->rollback_order( $change, $before );
+				break;
+			case 'set-comment-status':
+				$result = wp_set_comment_status( $change['target_id'], (string) ( $before['status'] ?? 'hold' ) )
+					? array( 'undone' => 'comment_status_restored' )
+					: array( 'error' => 'rollback_failed' );
+				break;
+			case 'restore-revision':
+				$result = $this->rollback_post( $change, $before );
 				break;
 			default:
 				$result = array( 'error' => 'unsupported_action' );

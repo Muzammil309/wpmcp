@@ -146,7 +146,8 @@ class WPMCP_Tool_DB {
 				return array( 'error' => 'only_read_queries_allowed' );
 			}
 			$limit = min( 1000, max( 1, (int) ( $args['limit'] ?? 100 ) ) );
-			$rows  = $wpdb->get_results( $sql . ' LIMIT ' . $limit, ARRAY_A ); // phpcs:ignore WordPress.DB
+			$has_limit = (bool) preg_match( '/\bLIMIT\b/i', $sql );
+			$rows      = $wpdb->get_results( $has_limit ? $sql : $sql . ' LIMIT ' . $limit, ARRAY_A ); // phpcs:ignore WordPress.DB
 			if ( null === $rows && '' !== $wpdb->last_error ) {
 				return array( 'error' => 'query_failed', 'message' => $wpdb->last_error );
 			}

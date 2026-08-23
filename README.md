@@ -1,6 +1,6 @@
 # WP MCP Suite
 
-Turn WordPress into a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server. Claude, Cursor, Codex or any MCP-compatible agent gets up to 77 tools to read and manage your site — with an SEO-first toolset, a full change ledger with rollback, and capability-checked safety rails on every call.
+Turn WordPress into a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server. Claude, Cursor, Codex or any MCP-compatible agent gets up to 110 tools to read and manage your site — with an SEO-first toolset, a full change ledger with rollback, and capability-checked safety rails on every call.
 
 - **SEO-first**: one unified field vocabulary across Yoast SEO, Rank Math, Slim SEO, All in One SEO, SEOPress and The SEO Framework (native fallback included), on-page audits scored from real content, meta-tag and JSON-LD generation.
 - **Full content stack**: posts, pages, terms, Media Library, redirects, core settings.
@@ -91,6 +91,14 @@ On HTTPS sites, clients can sign in through OAuth 2.1 with PKCE instead of pasti
 | Elementor | widget/schema catalogs, element tree reads, container/widget CRUD, duplicate/move, `build-page` declarative constructor |
 | History | every write recorded with before-images; `rollback-change` undoes posts, SEO fields, media, settings, product/order edits |
 | WooCommerce *(Pro)* | product catalog + pricing/stock edits, order lookup + status transitions |
+| Accessibility | scored WCAG audits (alt text, headings, contrast) with dry-run-first Elementor/media fixes *(Pro writes)* |
+| Forms | CF7 / WPForms / Gravity Forms catalogs; entry status + delete *(Pro)* |
+| Field plugins | ACF and MetaBox field-group reads + guarded field writes |
+| Memory | durable project memory: guardrails/facts/conventions with admin approval + session summaries |
+| Brand kits | bundled color/typography kits applied to the Elementor site kit, ledger-snapshotted |
+| Export | git-friendly JSON content mirrors under `uploads/wpmcp-exports/` with confirm-gated restore |
+| Comments | moderation reads for editors; create/reply, approve/spam/trash with ledger rollback, confirm-gated delete |
+| Revisions | list/compare revisions and confirm-gated restore (prior state captured to the ledger) |
 
 ## Compact tool mode
 
@@ -130,6 +138,9 @@ node tests/e2e-oauth.mjs          # OAuth 2.1 flow
 node tests/e2e-blocks.mjs         # Gutenberg tools
 node tests/e2e-elementor.mjs      # needs Elementor active in the env
 node tests/e2e-woo.mjs            # needs WooCommerce active in the env
+node tests/e2e-system.mjs         # diagnostics, plugins/themes, menus, fs/db
+node tests/e2e-g2.mjs             # a11y, forms, metabox, themes, elementor extras
+node tests/e2e-g3.mjs             # memory, brand kits, export/restore
 ```
 
 Optional plugins used by the suites: install via `npx @wordpress/env run cli wp plugin install elementor woocommerce --activate`.
